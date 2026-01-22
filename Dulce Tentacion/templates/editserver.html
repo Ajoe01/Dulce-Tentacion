@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h2>Administración de Productos</h2>
+    <a href="/logout" style="background: #ff1744; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold;">Cerrar Sesión</a>
+</div>
+
+<!-- AGREGAR PRODUCTO -->
+<div style="background: white; padding: 25px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px;">
+    <h3 style="color: #ff4d6d; margin-bottom: 20px;">➕ Agregar Nuevo Producto</h3>
+    <form method="post" enctype="multipart/form-data">
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Sección:</label>
+            <select name="categoria_id" required style="width: 100%; padding: 10px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box;">
+                <option value="">-- Selecciona una sección --</option>
+                {% for cat in categorias %}
+                <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <input type="text" name="nombre" placeholder="Nombre del producto" required style="width: 100%; padding: 10px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <input type="text" name="descripcion" placeholder="Descripción" required style="width: 100%; padding: 10px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <input type="number" name="precio" placeholder="Precio" required style="width: 100%; padding: 10px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <input type="file" name="imagen" accept="image/*" style="width: 100%; padding: 10px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box;">
+        </div>
+        <button type="submit" name="action" value="add" style="width: 100%; background: #ff4d6d; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Guardar Producto</button>
+    </form>
+</div>
+
+<hr style="margin: 40px 0;">
+
+<!-- LISTA DE PRODUCTOS -->
+<h3 style="color: #ff4d6d; margin-bottom: 20px;">📋 Productos Actuales</h3>
+
+{% if productos %}
+<div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; background: white;">
+        <thead>
+            <tr style="background: #ff4d6d; color: white;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Producto</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Descripción</th>
+                <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Precio</th>
+                <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in productos %}
+            <tr style="border: 1px solid #ddd;">
+                <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">{{ p.nombre }}</td>
+                <td style="padding: 12px; border: 1px solid #ddd; font-size: 14px; color: #666;">{{ p.descripcion }}</td>
+                <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; color: #ff4d6d;">${{ p.precio }}</td>
+                <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">
+                    <form method="post" style="display: inline;">
+                        <input type="hidden" name="producto_id" value="{{ p.id }}">
+                        <button type="submit" name="action" value="delete" style="background: #ff1744; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-right: 5px;" onclick="return confirm('¿Eliminar este producto?');">Eliminar</button>
+                    </form>
+                    <button style="background: #ff9500; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;" onclick="abrirEdicion({{ p.id }}, '{{ p.nombre }}', '{{ p.descripcion }}', {{ p.precio }})">Editar</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p style="text-align: center; color: #999; padding: 20px;">No hay productos agregados aún.</p>
+{% endif %}
+
+<!-- MODAL DE EDICIÓN -->
+<div id="modal-edicion" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; margin: 50px auto; box-shadow: 0 4px 16px rgba(0,0,0,0.2);">
+        <h3 style="color: #ff4d6d; margin-bottom: 20px;">✏️ Editar Producto</h3>
+        <form method="post" enctype="multipart/form-data">
+            <input type="hidden" id="edit-id" name="producto_id">
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="edit-nombre" name="nombre" placeholder="Nombre" required style="width: 100%; padding: 10px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <textarea id="edit-descripcion" name="descripcion" placeholder="Descripción" required style="width: 100%; padding: 10px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box; height: 80px;"></textarea>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <input type="number" id="edit-precio" name="precio" placeholder="Precio" required style="width: 100%; padding: 10px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Nueva imagen (opcional):</label>
+                <input type="file" name="imagen" accept="image/*" style="width: 100%; padding: 10px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box;">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" name="action" value="edit" style="flex: 1; background: #4CAF50; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Guardar Cambios</button>
+                <button type="button" onclick="cerrarEdicion()" style="flex: 1; background: #ccc; color: black; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function abrirEdicion(id, nombre, descripcion, precio) {
+    document.getElementById("edit-id").value = id;
+    document.getElementById("edit-nombre").value = nombre;
+    document.getElementById("edit-descripcion").value = descripcion;
+    document.getElementById("edit-precio").value = precio;
+    document.getElementById("modal-edicion").style.display = "block";
+}
+
+function cerrarEdicion() {
+    document.getElementById("modal-edicion").style.display = "none";
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById("modal-edicion");
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+</script>
+
+{% endblock %}

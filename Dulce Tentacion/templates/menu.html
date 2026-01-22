@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Menú de Dulce Tentación 🍓</h1>
+
+{% for categoria in categorias %}
+  <h2>{{ categoria.nombre }}</h2>
+  <div class="grid">
+    {% set cat_productos = productos | selectattr('categoria_id', 'equalto', categoria.id) | list %}
+    {% for producto in cat_productos %}
+      <div class="card">
+        <img src="{{ url_for('static', filename='images/productos/' + producto.imagen) }}">
+        <h3>{{ producto.nombre }}</h3>
+        {% if producto.descripcion %}
+          <p>{{ producto.descripcion }}</p>
+        {% endif %}
+        {% set opciones_producto = opciones | selectattr('producto_id', 'equalto', producto.id) | list %}
+        {% if opciones_producto %}
+          <p class="precio">${{ opciones_producto[0].precio | string | replace(',', '.') }}</p>
+        {% endif %}
+        <div class="cantidad">
+          <button class="menos">-</button>
+          <input type="number" class="cantidad-input" value="1" min="1">
+          <button class="mas">+</button>
+        </div>
+        <button class="agregar-btn">Agregar al carrito</button>
+      </div>
+    {% endfor %}
+  </div>
+{% endfor %}
+
+<script>
+// Botones +, - y agregar al carrito
+document.querySelectorAll(".card").forEach(card => {
+    const input = card.querySelector(".cantidad-input");
+
+    card.querySelector(".mas").onclick = () => input.value = parseInt(input.value)+1;
+    card.querySelector(".menos").onclick = () => {
+        if(parseInt(input.value)>1) input.value = parseInt(input.value)-1;
+    };
+
+    card.querySelector(".agregar-btn").onclick = () => {
+        const nombre = card.querySelector("h3").textContent;
+        const precio = parseInt(card.querySelector("p.precio").textContent.replace(/\D/g,''));
+        const cantidad = parseInt(input.value);
+
+        let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+        carrito.push({nombre, precio, cantidad});
+        localStorage.setItem("carrito", JSON.stringify(carrito));
+
+        alert(nombre + " agregado al carrito ✅");
+    };
+});
+</script>
+
+{% endblock %}

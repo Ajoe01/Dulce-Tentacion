@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Carrito de Compras 🛒</h2>
+
+<div id="carrito-container"></div>
+
+<h3 id="total"></h3>
+
+<hr>
+
+<h3>Detalles de la Compra</h3>
+<div style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+    <label>Describe los detalles de cada producto (sabores, porciones, salsas, toppings, etc.):</label><br>
+    <textarea id="detalles-compra" placeholder="Ejemplo:&#10;Cono con 2 porciones: arequipe y vainilla&#10;Cono con 2 porciones: chocolate y fresa&#10;Fresas con crema: con arequipe, chocolate y toppings de oreo y maní&#10;&#10;Especifica acá cada producto y sus características..." style="width: 100%; padding: 12px; border: 2px solid #ff4d6d; border-radius: 6px; box-sizing: border-box; height: 120px; font-size: 14px;"></textarea>
+</div>
+
+<hr>
+
+<h3>Tipo de pedido</h3>
+<select id="tipo-pedido">
+    <option value="Recoger">Recoger</option>
+    <option value="Domicilio">Domicilio</option>
+    <option value="Comer en local">Comer en local</option>
+</select>
+
+<div id="tipo-detalles" style="margin-top:10px;"></div>
+
+<h3>Método de pago</h3>
+<select id="metodo-pago">
+    <option value="Efectivo">Efectivo</option>
+    <option value="QR">QR</option>
+</select>
+
+<div id="qr-container" style="display:none; margin-top: 10px;">
+    <p>Escanea este QR para pagar:</p>
+    <img id="qr-imagen" src="{{ url_for('static', filename='images/qr-placeholder.png') }}" alt="QR de pago" style="max-width:200px;">
+    <p style="color:red;">*Recuerda enviar el voucher por WhatsApp después de pagar.*</p>
+</div>
+
+<button id="enviar-whatsapp" style="margin-top:15px; padding:10px 20px; background:#25D366; color:white; border:none; border-radius:6px; cursor:pointer;">Enviar pedido por WhatsApp</button>
+
+<script>
+// Función para generar código alfanumérico aleatorio
+function generarCodigo(length=6){
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
+    for(let i=0;i<length;i++){
+        result += chars.charAt(Math.floor(Math.random()*chars.length));
+    }
+    return result;
+}
+
+// Renderiza detalles adicionales según tipo de pedido
+function renderTipoDetalles(){
+    const cont = document.getElementById("tipo-detalles");
+    const tipo = document.getElementById("tipo-pedido").value;
+    cont.innerHTML = "";
+
+    if(tipo === "Domicilio"){
+        cont.innerHTML = `
+            <p style="color: #ff4d6d; font-weight: bold; margin-bottom: 10px;">💰 Domicilio: $4.000 en adelante dependiendo de tu ubicación</p>
+            <input type="text" id="nombre-cliente" placeholder="Nombre" required style="margin-right:5px;">
+            <input type="text" id="barrio" placeholder="Barrio" required style="margin-right:5px;">
+            <input type="text" id="telefono" placeholder="Teléfono" required>
+        `;
+    } else if(tipo === "Recoger"){
+        const codigo = generarCodigo();
+        cont.innerHTML = `<p>Código de confirmación: <b id="codigo-confirmacion">${codigo}</b></p>`;
+    } else if(tipo === "Comer en local"){
+        cont.innerHTML = `<input type="text" id="mesa" placeholder="Número de mesa" required>`;
+    }
+}
+
+// Mostrar QR si se elige método QR
+document.getElementById("metodo-pago").onchange = function(){
+    document.getElementById("qr-container").style.display = (this.value==="QR")?"block":"none";
+};
+
+document.getElementById("tipo-pedido").onchange = renderTipoDetalles;
+
+renderTipoDetalles(); // inicializa
+
+// Carrito matriz
+function renderCarrito() {
+    let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+    const container = document.getElementById("carrito-container");
+    container.innerHTML = '';
+
+    if(carrito.length === 0){
+        container.innerHTML = "<p>El carrito está vacío 😢</p>";
+        document.getElementById("total").textContent = "";
+        return;
+    }
+
+    const table = document.createElement("table");
+    table.style.width="100%";
+    table.style.borderCollapse="collapse";
+    table.innerHTML = `
+        <tr style="background:#ff4d6d; color:white;">
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio unitario</th>
+            <th>Subtotal</th>
+            <th>Eliminar</th>
+        </tr>
+    `;
+
+    let total = 0;
+    carrito.forEach((item,index)=>{
+        const subtotal = item.precio*item.cantidad;
+        total+=subtotal;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td style="text-align:center;">${item.nombre}</td>
+            <td style="text-align:center;">
+                <button class="menos">-</button>
+                <input type="number" class="cantidad-input" value="${item.cantidad}" min="1" style="width:50px; text-align:center;">
+                <button class="mas">+</button>
+            </td>
+            <td style="text-align:center;">$${item.precio}</td>
+            <td style="text-align:center;">$${subtotal}</td>
+            <td style="text-align:center;"><button class="eliminar-btn" style="background:#ff1744; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">Eliminar</button></td>
+        `;
+        table.appendChild(row);
+
+        const input = row.querySelector(".cantidad-input");
+        row.querySelector(".mas").onclick = ()=>{
+            input.value = parseInt(input.value)+1;
+            carrito[index].cantidad = parseInt(input.value);
+            localStorage.setItem("carrito", JSON.stringify(carrito));
+            renderCarrito();
+        };
+        row.querySelector(".menos").onclick = ()=>{
+            if(parseInt(input.value)>1){
+                input.value = parseInt(input.value)-1;
+                carrito[index].cantidad = parseInt(input.value);
+                localStorage.setItem("carrito", JSON.stringify(carrito));
+                renderCarrito();
+            }
+        };
+        
+        row.querySelector(".eliminar-btn").onclick = ()=>{
+            carrito.splice(index,1);
+            localStorage.setItem("carrito", JSON.stringify(carrito));
+            renderCarrito();
+        };
+    });
+
+    container.appendChild(table);
+    document.getElementById("total").textContent = "Total: $" + total;
+}
+
+// Enviar pedido por WhatsApp
+document.getElementById("enviar-whatsapp").onclick = function(){
+    const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+    if(carrito.length===0){
+        alert("El carrito está vacío 😢");
+        return;
+    }
+
+    let mensaje = "¡Hola! Quiero hacer un pedido:\n\n";
+    carrito.forEach(item=>{
+        mensaje += `${item.nombre} x${item.cantidad} = $${item.precio*item.cantidad}\n`;
+        if(item.sabor) mensaje += `  • Sabor: ${item.sabor}\n`;
+        if(item.toppings) mensaje += `  • Toppings: ${item.toppings}\n`;
+        if(item.observaciones) mensaje += `  • Observaciones: ${item.observaciones}\n`;
+    });
+
+    const total = carrito.reduce((sum,item)=>sum+item.precio*item.cantidad,0);
+    mensaje += `\nTotal: $${total}\n`;
+
+    const tipo = document.getElementById("tipo-pedido").value;
+    mensaje += `Tipo de pedido: ${tipo}\n`;
+
+    if(tipo==="Domicilio"){
+        const nombre = document.getElementById("nombre-cliente").value || "";
+        const barrio = document.getElementById("barrio").value || "";
+        const telefono = document.getElementById("telefono").value || "";
+        mensaje += `Nombre: ${nombre}\nBarrio: ${barrio}\nTeléfono: ${telefono}\n`;
+    } else if(tipo==="Recoger"){
+        const codigo = document.getElementById("codigo-confirmacion").textContent;
+        mensaje += `Código de confirmación: ${codigo}\n`;
+    } else if(tipo==="Comer en local"){
+        const mesa = document.getElementById("mesa").value || "";
+        mensaje += `Mesa: ${mesa}\n`;
+    }
+
+    const pago = document.getElementById("metodo-pago").value;
+    mensaje += `Método de pago: ${pago}\n`;
+    if(pago==="QR") mensaje += "*Recuerda enviar el voucher por WhatsApp después de pagar.*\n";
+
+    const numero = "573186684407"; // tu número de WhatsApp
+    const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+    window.open(url,"_blank");
+};
+
+renderCarrito();
+</script>
+
+{% endblock %}
+});
+    
+    const detallesCompra = document.getElementById("detalles-compra").value;
+    if(detallesCompra.trim()){
+        mensaje += `\nDetalles de los productos:\n${detallesCompra}\n`;
+    }
