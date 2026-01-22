@@ -190,7 +190,7 @@ document.getElementById("enviar-whatsapp").onclick = function(){
     mensaje += `Método de pago: ${pago}\n`;
     if(pago==="QR") mensaje += "*Recuerda enviar el voucher por WhatsApp después de pagar.*\n";
 
-    const numero = "573186684407"; // tu número de WhatsApp
+    const numero = "573006557487"; // tu número de WhatsApp
     const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
     window.open(url,"_blank");
 };
@@ -204,4 +204,5 @@ renderCarrito();
     const detallesCompra = document.getElementById("detalles-compra").value;
     if(detallesCompra.trim()){
         mensaje += `\nDetalles de los productos:\n${detallesCompra}\n`;
+
     }
