@@ -1,56 +1,65 @@
 {% extends "base.html" %}
+
 {% block content %}
-
-<h1>Menú de Dulce Tentación 🍓</h1>
-
-{% for categoria in categorias %}
-  <h2>{{ categoria.nombre }}</h2>
-  <div class="grid">
-    {% set cat_productos = productos | selectattr('categoria_id', 'equalto', categoria.id) | list %}
-    {% for producto in cat_productos %}
-      <div class="card">
-        <img src="{{ url_for('static', filename='images/productos/' + producto.imagen) }}">
-        <h3>{{ producto.nombre }}</h3>
-        {% if producto.descripcion %}
-          <p>{{ producto.descripcion }}</p>
-        {% endif %}
-        {% set opciones_producto = opciones | selectattr('producto_id', 'equalto', producto.id) | list %}
-        {% if opciones_producto %}
-          <p class="precio">${{ opciones_producto[0].precio | string | replace(',', '.') }}</p>
-        {% endif %}
-        <div class="cantidad">
-          <button class="menos">-</button>
-          <input type="number" class="cantidad-input" value="1" min="1">
-          <button class="mas">+</button>
+<div class="container">
+    <h1>Menú de Dulce Tentación 🍓</h1>
+    
+    {% for categoria in categorias %}
+    <div>
+        <h2>{{ categoria.nombre }}</h2>
+        <div class="grid">
+            {% set cat_productos = productos | selectattr('categoria_id', 'equalto', categoria.id) | list %}
+            {% for producto in cat_productos %}
+            <div class="card">
+                {% if producto.imagen %}
+                    {% if producto.imagen.startswith('http') %}
+                        <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}" onerror="this.src='https://via.placeholder.com/300x300.png?text=Sin+Imagen'">
+                    {% else %}
+                        <img src="/static/images/productos/{{ producto.imagen }}" alt="{{ producto.nombre }}" onerror="this.src='https://via.placeholder.com/300x300.png?text=Sin+Imagen'">
+                    {% endif %}
+                {% else %}
+                    <img src="https://via.placeholder.com/300x300.png?text=Sin+Imagen" alt="{{ producto.nombre }}">
+                {% endif %}
+                
+                <h3>{{ producto.nombre }}</h3>
+                
+                {% if producto.descripcion %}
+                <p>{{ producto.descripcion }}</p>
+                {% endif %}
+                
+                {% set opciones_producto = opciones | selectattr('producto_id', 'equalto', producto.id) | list %}
+                {% if opciones_producto %}
+                <p class="precio">${{ opciones_producto[0].precio | string | replace(',', '.') }}</p>
+                {% endif %}
+                
+                <div class="cantidad">
+                    <button onclick="decrementar({{ producto.id }})">-</button>
+                    <input type="number" id="cantidad-{{ producto.id }}" class="cantidad-input" value="1" min="1">
+                    <button onclick="incrementar({{ producto.id }})">+</button>
+                </div>
+                
+                <button class="btn-add" onclick="agregarAlCarrito({{ producto.id }}, '{{ producto.nombre }}', {{ opciones_producto[0].precio if opciones_producto else 0 }})">
+                    Agregar al carrito
+                </button>
+            </div>
+            {% endfor %}
         </div>
-        <button class="agregar-btn">Agregar al carrito</button>
-      </div>
+    </div>
     {% endfor %}
-  </div>
-{% endfor %}
+</div>
 
+<script src="/static/cart.js"></script>
 <script>
-// Botones +, - y agregar al carrito
-document.querySelectorAll(".card").forEach(card => {
-    const input = card.querySelector(".cantidad-input");
+    function incrementar(id) {
+        const input = document.getElementById(`cantidad-${id}`);
+        input.value = parseInt(input.value) + 1;
+    }
 
-    card.querySelector(".mas").onclick = () => input.value = parseInt(input.value)+1;
-    card.querySelector(".menos").onclick = () => {
-        if(parseInt(input.value)>1) input.value = parseInt(input.value)-1;
-    };
-
-    card.querySelector(".agregar-btn").onclick = () => {
-        const nombre = card.querySelector("h3").textContent;
-        const precio = parseInt(card.querySelector("p.precio").textContent.replace(/\D/g,''));
-        const cantidad = parseInt(input.value);
-
-        let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-        carrito.push({nombre, precio, cantidad});
-        localStorage.setItem("carrito", JSON.stringify(carrito));
-
-        alert(nombre + " agregado al carrito ✅");
-    };
-});
+    function decrementar(id) {
+        const input = document.getElementById(`cantidad-${id}`);
+        if (parseInt(input.value) > 1) {
+            input.value = parseInt(input.value) - 1;
+        }
+    }
 </script>
-
 {% endblock %}
