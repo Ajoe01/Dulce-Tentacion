@@ -95,37 +95,37 @@ def init_db():
         categorias = {
             "Fresas con Crema": [
                 ("Fresas con Crema - Pequeña", 
-                 "Salsas: Arequipe, Chocolate, Leche condensada, Mermelada de fresa. Toppings: Oreo-maní, Leche en polvo, Chocodisk-piazza, Gomitas-masmelos, Lluvia de chocolate, Choc melo-gusanitos, Chocorramo-masmelos", 
+                 "Fresas, crema, mermelada de la casa, salsa de preferencia, topping de oreo.", 
                  PLACEHOLDER_URL, [("Precio", 12000)]),
                 ("Fresas con Crema - Mediana", 
-                 "Salsas: Arequipe, Chocolate, Leche condensada, Mermelada de fresa. Toppings: Oreo-maní, Leche en polvo, Chocodisk-piazza, Gomitas-masmelos, Lluvia de chocolate, Choc melo-gusanitos, Chocorramo-masmelos", 
+                 "Fresas, crema, mermelada de la casa, salsa de preferencia, topping de oreo.", 
                  PLACEHOLDER_URL, [("Precio", 15000)]),
                 ("Fresas con Crema + Toppings", 
-                 "Salsas: Arequipe, Chocolate, Leche condensada, Mermelada de fresa. Toppings: Oreo-maní, Leche en polvo, Chocodisk-piazza, Gomitas-masmelos, Lluvia de chocolate, Choc melo-gusanitos, Chocorramo-masmelos", 
+                 "Fresas, crema, mermelada de la casa, salsa de preferencia, toppings.", 
                  PLACEHOLDER_URL, [("Precio", 17000)]),
                 ("Fresas con Crema + Helado", 
-                 "Salsas: Arequipe, Chocolate, Leche condensada, Mermelada de fresa. Toppings: Oreo-maní, Leche en polvo, Chocodisk-piazza, Gomitas-masmelos, Lluvia de chocolate, Choc melo-gusanitos, Chocorramo-masmelos", 
+                 "Fresas, crema, 1 porción de helado, queso, mermelada de la casa, salsa de preferencia, toppings.", 
                  PLACEHOLDER_URL, [("Precio", 22000)]),
             ],
             "Menú Kids": [
-                ("Copas Kids", "Copas para niños", PLACEHOLDER_URL, [("Precio", 8000)]),
-                ("Canasta Kids", "Canasta con 2 porciones de helado + salsa + topping", PLACEHOLDER_URL, [("Precio", 9000)]),
+                ("Copas Kids", "2 porciones de helado, salsa, toppings.", PLACEHOLDER_URL, [("Precio", 8000)]),
+                ("Canasta Kids", "2 porciones de helado, salsa, toppings.", PLACEHOLDER_URL, [("Precio", 9000)]),
             ],
             "Helados, Copas y Ensaladas": [
-                ("Cono 1 bola", "Helado en cono de una bola", PLACEHOLDER_URL, [("Precio", 3500)]),
-                ("Cono 2 bolas", "Helado en cono de dos bolas", PLACEHOLDER_URL, [("Precio", 6000)]),
-                ("Canasta 2 bolas", "Canasta con dos bolas de helado", PLACEHOLDER_URL, [("Precio", 7000)]),
-                ("Canasta 3 bolas", "Canasta con tres bolas de helado", PLACEHOLDER_URL, [("Precio", 9000)]),
-                ("Canasta Frutal", "Canasta frutal especial", PLACEHOLDER_URL, [("Precio", 12000)]),
-                ("Ensalada de Frutas", "Fresca ensalada de frutas variadas", PLACEHOLDER_URL, [("Precio", 15000)]),
-                ("Plato de Frutas con Helado", "Plato de frutas con helado y topping", PLACEHOLDER_URL, [("Precio", 12000)]),
-                ("Copa Estándar", "3 porciones de helado + salsa + toppings", PLACEHOLDER_URL, [("Precio", 9000)]),
-                ("Copa Premium", "Porción de fresas con crema, 2 porciones de helado frutas, piazza galletas, chocolate, salsa", PLACEHOLDER_URL, [("Precio", 24000)]),
+                ("Cono 1 bola", "Helado en cono de 1 porción, salsa, topping de oreo o chispitas de chocolate.", PLACEHOLDER_URL, [("Precio", 3500)]),
+                ("Cono 2 bolas", "Helado en cono de 2 porciones, salsa, topping de oreo o chispitas de chocolate.", PLACEHOLDER_URL, [("Precio", 6000)]),
+                ("Canasta 2 bolas", "Helado en canasta de 2 porciones, salsa, topping de oreo o piazza.", PLACEHOLDER_URL, [("Precio", 7000)]),
+                ("Canasta 3 bolas", "Helado en canasta de 3 porciones, salsa, topping de oreo o piazza.", PLACEHOLDER_URL, [("Precio", 9000)]),
+                ("Canasta Frutal", "Frutas, 1 porción de elado, salsa, crema de la casa, galleta.", PLACEHOLDER_URL, [("Precio", 12000)]),
+                ("Ensalada de Frutas", "Variedad de frutas, crema de la casa, 2 porciones de helado, salsa, queso, toppins.", PLACEHOLDER_URL, [("Precio", 15000)]),
+                ("Plato de Frutas con Helado", "Plato de solo frutas con 2 porciones de helado.", PLACEHOLDER_URL, [("Precio", 12000)]),
+                ("Copa Estándar", "3 porciones de helado, salsa, toppings.", PLACEHOLDER_URL, [("Precio", 9000)]),
+                ("Copa Premium", "Porción de fresas con crema, 2 porciones de helado,variedad de frutas, piazza, galletas, salsa de preferencia.", PLACEHOLDER_URL, [("Precio", 24000)]),
             ],
             "Obleas": [
-                ("Oblea Sencilla", "Oblea sencilla con dulce de leche", PLACEHOLDER_URL, [("Precio", 2000)]),
-                ("Oblea con Fresas", "Oblea con fresas y crema", PLACEHOLDER_URL, [("Precio", 5000)]),
-                ("Oblea Especial", "Oblea especial con toppings", PLACEHOLDER_URL, [("Precio", 8000)]),
+                ("Oblea Sencilla", "Salsa, oreo triturada o chispitas de colores.", PLACEHOLDER_URL, [("Precio", 2000)]),
+                ("Oblea con Fresas", "Fresas, crema de la casa, queso, salsas, oreo triturada.", PLACEHOLDER_URL, [("Precio", 5000)]),
+                ("Oblea Especial", "Frutas, cremade la casa, queso, salsas, oreo triturada.", PLACEHOLDER_URL, [("Precio", 8000)]),
             ],
         }
         
@@ -299,4 +299,7 @@ def editserver():
     return render_template("editserver.html", productos=productos, categorias=categorias)
 
 if __name__ == "__main__":
+    print("🚀 Iniciando servidor...")
+    print(f"📁 Cloudinary configurado: {bool(os.environ.get('CLOUDINARY_CLOUD_NAME'))}")
     app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
