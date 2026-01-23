@@ -9,6 +9,63 @@
 
 <hr>
 
+<!-- NUEVA SECCIÓN: Opciones de personalización -->
+<div style="background: #fff0f5; padding: 20px; border-radius: 10px; margin: 20px 0; border: 2px solid #ff4d6d;">
+    <h3 style="color: #ff4d6d; text-align: center; margin-bottom: 20px;">🍨 Opciones Disponibles</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        
+        <!-- SALSAS -->
+        <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <h4 style="color: #ff4d6d; margin-bottom: 10px;">🍫 Salsas</h4>
+            <ul style="list-style: none; padding: 0; line-height: 1.8;">
+                <li>✓ Arequipe</li>
+                <li>✓ Chocolate</li>
+                <li>✓ Leche condensada</li>
+                <li>✓ Mermelada de fresa</li>
+            </ul>
+        </div>
+
+        <!-- TOPPINGS -->
+        <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <h4 style="color: #ff4d6d; margin-bottom: 10px;">🍬 Toppings</h4>
+            <ul style="list-style: none; padding: 0; line-height: 1.8; font-size: 14px;">
+                <li>✓ Oreo-maní</li>
+                <li>✓ Leche en polvo</li>
+                <li>✓ Chocodisk-piazza</li>
+                <li>✓ Gomitas-masmelos</li>
+                <li>✓ Lluvia de chocolate</li>
+                <li>✓ Choc melo-gusanitos</li>
+                <li>✓ Chocorramo-masmelos</li>
+            </ul>
+        </div>
+
+        <!-- HELADOS -->
+        <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <h4 style="color: #ff4d6d; margin-bottom: 10px;">🍦 Sabores de Helado</h4>
+            <ul style="list-style: none; padding: 0; line-height: 1.8; font-size: 14px;">
+                <li>✓ Vainilla</li>
+                <li>✓ Chocolate</li>
+                <li>✓ Fresa</li>
+                <li>✓ Arequipe</li>
+                <li>✓ Chicle</li>
+                <li>✓ Cookies & Cream</li>
+                <li>✓ Limón</li>
+                <li>✓ Mora</li>
+                <li>✓ Café</li>
+                <li>✓ Ron con pasas</li>
+            </ul>
+        </div>
+
+    </div>
+    
+    <p style="text-align: center; margin-top: 15px; color: #666; font-style: italic;">
+        💡 Menciona tus preferencias en el campo de detalles abajo
+    </p>
+</div>
+
+<hr>
+
 <h3>Detalles de la Compra</h3>
 <div style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
     <label>Describe los detalles de cada producto (sabores, porciones, salsas, toppings, etc.):</label><br>
@@ -32,10 +89,10 @@
     <option value="QR">QR</option>
 </select>
 
-<div id="qr-container" style="display:none; margin-top: 10px;">
-    <p>Escanea este QR para pagar:</p>
-    <img id="qr-imagen" src="{{ url_for('static', filename='images/qr-placeholder.png') }}" alt="QR de pago" style="max-width:200px;">
-    <p style="color:red;">*Recuerda enviar el voucher por WhatsApp después de pagar.*</p>
+<div id="qr-container" style="display:none; margin: 20px auto; max-width: 400px; text-align: center; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <p style="font-size: 16px; font-weight: bold; color: #ff4d6d; margin-bottom: 15px;">Escanea este QR para pagar:</p>
+    <img id="qr-imagen" src="{{ url_for('static', filename='images/qr-placeholder.png') }}" alt="QR de pago" style="display: block; margin: 0 auto; max-width:250px; width: 100%; border: 3px solid #ff4d6d; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+    <p style="color:#ff1744; font-weight: bold; margin-top: 15px; font-size: 14px;">⚠️ *Recuerda enviar el voucher por WhatsApp después de pagar.*</p>
 </div>
 
 <button id="enviar-whatsapp" style="margin-top:15px; padding:10px 20px; background:#25D366; color:white; border:none; border-radius:6px; cursor:pointer;">Enviar pedido por WhatsApp</button>
@@ -170,8 +227,13 @@ document.getElementById("enviar-whatsapp").onclick = function(){
     const total = carrito.reduce((sum,item)=>sum+item.precio*item.cantidad,0);
     mensaje += `\nTotal: $${total}\n`;
 
+    const detallesCompra = document.getElementById("detalles-compra").value;
+    if(detallesCompra.trim()){
+        mensaje += `\n📝 Detalles de los productos:\n${detallesCompra}\n`;
+    }
+
     const tipo = document.getElementById("tipo-pedido").value;
-    mensaje += `Tipo de pedido: ${tipo}\n`;
+    mensaje += `\nTipo de pedido: ${tipo}\n`;
 
     if(tipo==="Domicilio"){
         const nombre = document.getElementById("nombre-cliente").value || "";
@@ -199,10 +261,3 @@ renderCarrito();
 </script>
 
 {% endblock %}
-});
-    
-    const detallesCompra = document.getElementById("detalles-compra").value;
-    if(detallesCompra.trim()){
-        mensaje += `\nDetalles de los productos:\n${detallesCompra}\n`;
-
-    }
