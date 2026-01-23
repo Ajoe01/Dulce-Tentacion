@@ -1,55 +1,56 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import sqlite3, os
 from werkzeug.utils import secure_filename
-from PIL import Image
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 app = Flask(__name__)
-app.secret_key = "Dios7es7bueno7_secret_key"
+app.secret_key = os.environ.get("SECRET_KEY", "Dios7es7bueno7_secret_key")
+
+# Configuración de Cloudinary (desde variables de entorno)
+cloudinary.config(
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET")
+)
 
 DB = "productos.db"
-ADMIN_PASSWORD = "Dios7es7bueno7"
-UPLOAD_FOLDER = "static/images/productos"
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Dios7es7bueno7")
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+PLACEHOLDER_URL = "https://via.placeholder.com/300x300.png?text=Sin+Imagen"
 
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5MB máximo
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Crear imagen placeholder si no existe
-def create_placeholder():
-    placeholder_path = os.path.join(UPLOAD_FOLDER, "placeholder.png")
-    if not os.path.exists(placeholder_path):
-        img = Image.new('RGB', (300, 300), color='#ffb3ba')
-        img.save(placeholder_path)
-
-create_placeholder()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def optimize_image(filepath):
-    """Optimiza imágenes para web"""
+def upload_to_cloudinary(file):
+    """Sube imagen a Cloudinary y retorna la URL"""
     try:
-        img = Image.open(filepath)
-        # Convertir a RGB si es necesario
-        if img.mode in ('RGBA', 'LA', 'P'):
-            background = Image.new('RGB', img.size, (255, 255, 255))
-            if img.mode == 'P':
-                img = img.convert('RGBA')
-            background.paste(img, mask=img.split()[-1] if 'A' in img.mode else None)
-            img = background
-        
-        # Redimensionar si es muy grande
-        max_size = (800, 800)
-        img.thumbnail(max_size, Image.Resampling.LANCZOS)
-        
-        # Guardar optimizada
-        img.save(filepath, 'JPEG', quality=85, optimize=True)
-        return True
+        result = cloudinary.uploader.upload(
+            file,
+            folder="dulce_tentacion",
+            transformation=[
+                {'width': 800, 'height': 800, 'crop': 'limit'},
+                {'quality': 'auto:good'}
+            ]
+        )
+        return result['secure_url']
     except Exception as e:
-        print(f"Error optimizando imagen: {e}")
-        return False
+        print(f"Error subiendo a Cloudinary: {e}")
+        return None
+
+def delete_from_cloudinary(image_url):
+    """Elimina imagen de Cloudinary"""
+    try:
+        if image_url and "cloudinary.com" in image_url:
+            # Extraer public_id de la URL
+            public_id = image_url.split('/')[-1].split('.')[0]
+            public_id = f"dulce_tentacion/{public_id}"
+            cloudinary.uploader.destroy(public_id)
+    except Exception as e:
+        print(f"Error eliminando de Cloudinary: {e}")
 
 def db():
     conn = sqlite3.connect(DB)
@@ -88,43 +89,43 @@ def init_db():
         )
     """)
     
-    # Precarga con imagen placeholder
+    # Precarga con placeholder
     c.execute("SELECT COUNT(*) FROM productos")
     if c.fetchone()[0] == 0:
         categorias = {
             "Fresas con Crema": [
                 ("Fresas con Crema - Pequeña", 
                  "Salsas: Arequipe, Chocolate, Leche condensada, Mermelada de fresa. Toppings: Oreo-maní, Leche en polvo, Chocodisk-piazza, Gomitas-masmelos, Lluvia de chocolate, Choc melo-gusanitos, Chocorramo-masmelos", 
-                 "placeholder.png", [("Precio", 12000)]),
+                 PLACEHOLDER_URL, [("Precio", 12000)]),
                 ("Fresas con Crema - Mediana", 
                  "Salsas: Arequipe, Chocolate, Leche condensada, Mermelada de fresa. Toppings: Oreo-maní, Leche en polvo, Chocodisk-piazza, Gomitas-masmelos, Lluvia de chocolate, Choc melo-gusanitos, Chocorramo-masmelos", 
-                 "placeholder.png", [("Precio", 15000)]),
+                 PLACEHOLDER_URL, [("Precio", 15000)]),
                 ("Fresas con Crema + Toppings", 
                  "Salsas: Arequipe, Chocolate, Leche condensada, Mermelada de fresa. Toppings: Oreo-maní, Leche en polvo, Chocodisk-piazza, Gomitas-masmelos, Lluvia de chocolate, Choc melo-gusanitos, Chocorramo-masmelos", 
-                 "placeholder.png", [("Precio", 17000)]),
+                 PLACEHOLDER_URL, [("Precio", 17000)]),
                 ("Fresas con Crema + Helado", 
                  "Salsas: Arequipe, Chocolate, Leche condensada, Mermelada de fresa. Toppings: Oreo-maní, Leche en polvo, Chocodisk-piazza, Gomitas-masmelos, Lluvia de chocolate, Choc melo-gusanitos, Chocorramo-masmelos", 
-                 "placeholder.png", [("Precio", 22000)]),
+                 PLACEHOLDER_URL, [("Precio", 22000)]),
             ],
             "Menú Kids": [
-                ("Copas Kids", "Copas para niños", "placeholder.png", [("Precio", 8000)]),
-                ("Canasta Kids", "Canasta con 2 porciones de helado + salsa + topping", "placeholder.png", [("Precio", 9000)]),
+                ("Copas Kids", "Copas para niños", PLACEHOLDER_URL, [("Precio", 8000)]),
+                ("Canasta Kids", "Canasta con 2 porciones de helado + salsa + topping", PLACEHOLDER_URL, [("Precio", 9000)]),
             ],
             "Helados, Copas y Ensaladas": [
-                ("Cono 1 bola", "Helado en cono de una bola", "placeholder.png", [("Precio", 3500)]),
-                ("Cono 2 bolas", "Helado en cono de dos bolas", "placeholder.png", [("Precio", 6000)]),
-                ("Canasta 2 bolas", "Canasta con dos bolas de helado", "placeholder.png", [("Precio", 7000)]),
-                ("Canasta 3 bolas", "Canasta con tres bolas de helado", "placeholder.png", [("Precio", 9000)]),
-                ("Canasta Frutal", "Canasta frutal especial", "placeholder.png", [("Precio", 12000)]),
-                ("Ensalada de Frutas", "Fresca ensalada de frutas variadas", "placeholder.png", [("Precio", 15000)]),
-                ("Plato de Frutas con Helado", "Plato de frutas con helado y topping", "placeholder.png", [("Precio", 12000)]),
-                ("Copa Estándar", "3 porciones de helado + salsa + toppings", "placeholder.png", [("Precio", 9000)]),
-                ("Copa Premium", "Porción de fresas con crema, 2 porciones de helado frutas, piazza galletas, chocolate, salsa", "placeholder.png", [("Precio", 24000)]),
+                ("Cono 1 bola", "Helado en cono de una bola", PLACEHOLDER_URL, [("Precio", 3500)]),
+                ("Cono 2 bolas", "Helado en cono de dos bolas", PLACEHOLDER_URL, [("Precio", 6000)]),
+                ("Canasta 2 bolas", "Canasta con dos bolas de helado", PLACEHOLDER_URL, [("Precio", 7000)]),
+                ("Canasta 3 bolas", "Canasta con tres bolas de helado", PLACEHOLDER_URL, [("Precio", 9000)]),
+                ("Canasta Frutal", "Canasta frutal especial", PLACEHOLDER_URL, [("Precio", 12000)]),
+                ("Ensalada de Frutas", "Fresca ensalada de frutas variadas", PLACEHOLDER_URL, [("Precio", 15000)]),
+                ("Plato de Frutas con Helado", "Plato de frutas con helado y topping", PLACEHOLDER_URL, [("Precio", 12000)]),
+                ("Copa Estándar", "3 porciones de helado + salsa + toppings", PLACEHOLDER_URL, [("Precio", 9000)]),
+                ("Copa Premium", "Porción de fresas con crema, 2 porciones de helado frutas, piazza galletas, chocolate, salsa", PLACEHOLDER_URL, [("Precio", 24000)]),
             ],
             "Obleas": [
-                ("Oblea Sencilla", "Oblea sencilla con dulce de leche", "placeholder.png", [("Precio", 2000)]),
-                ("Oblea con Fresas", "Oblea con fresas y crema", "placeholder.png", [("Precio", 5000)]),
-                ("Oblea Especial", "Oblea especial con toppings", "placeholder.png", [("Precio", 8000)]),
+                ("Oblea Sencilla", "Oblea sencilla con dulce de leche", PLACEHOLDER_URL, [("Precio", 2000)]),
+                ("Oblea con Fresas", "Oblea con fresas y crema", PLACEHOLDER_URL, [("Precio", 5000)]),
+                ("Oblea Especial", "Oblea especial con toppings", PLACEHOLDER_URL, [("Precio", 8000)]),
             ],
         }
         
@@ -201,7 +202,6 @@ def editserver():
         action = request.form.get("action")
         conn = db()
         c = conn.cursor()
-        error_msg = None
         
         try:
             if action == "add":
@@ -211,28 +211,17 @@ def editserver():
                 categoria_id = request.form.get("categoria_id", None)
                 imagen = request.files.get("imagen")
                 
-                filename = "placeholder.png"
+                image_url = PLACEHOLDER_URL
                 
-                if imagen and imagen.filename:
-                    if allowed_file(imagen.filename):
-                        filename = secure_filename(imagen.filename)
-                        # Agregar timestamp para evitar conflictos
-                        import time
-                        filename = f"{int(time.time())}_{filename}"
-                        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-                        imagen.save(filepath)
-                        
-                        # Optimizar imagen
-                        if not optimize_image(filepath):
-                            os.remove(filepath)
-                            filename = "placeholder.png"
-                    else:
-                        error_msg = "Formato de imagen no válido. Use: PNG, JPG, JPEG, GIF, WEBP"
+                if imagen and imagen.filename and allowed_file(imagen.filename):
+                    uploaded_url = upload_to_cloudinary(imagen)
+                    if uploaded_url:
+                        image_url = uploaded_url
                 
                 c.execute("""
                     INSERT INTO productos (categoria_id, nombre, descripcion, imagen)
                     VALUES (?, ?, ?, ?)
-                """, (categoria_id, nombre, descripcion, filename))
+                """, (categoria_id, nombre, descripcion, image_url))
                 prod_id = c.lastrowid
                 
                 c.execute(
@@ -248,34 +237,24 @@ def editserver():
                 precio = request.form.get("precio", 0)
                 imagen = request.files.get("imagen")
                 
-                if imagen and imagen.filename:
-                    if allowed_file(imagen.filename):
-                        filename = secure_filename(imagen.filename)
-                        import time
-                        filename = f"{int(time.time())}_{filename}"
-                        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-                        imagen.save(filepath)
-                        
-                        if optimize_image(filepath):
-                            # Eliminar imagen anterior si no es placeholder
-                            old_img = c.execute("SELECT imagen FROM productos WHERE id = ?", (producto_id,)).fetchone()
-                            if old_img and old_img[0] != "placeholder.png":
-                                old_path = os.path.join(app.config["UPLOAD_FOLDER"], old_img[0])
-                                if os.path.exists(old_path):
-                                    os.remove(old_path)
-                            
-                            c.execute("""
-                                UPDATE productos SET nombre = ?, descripcion = ?, imagen = ?
-                                WHERE id = ?
-                            """, (nombre, descripcion, filename, producto_id))
-                        else:
-                            os.remove(filepath)
-                            c.execute("""
-                                UPDATE productos SET nombre = ?, descripcion = ?
-                                WHERE id = ?
-                            """, (nombre, descripcion, producto_id))
+                if imagen and imagen.filename and allowed_file(imagen.filename):
+                    # Eliminar imagen anterior
+                    old_img = c.execute("SELECT imagen FROM productos WHERE id = ?", (producto_id,)).fetchone()
+                    if old_img and old_img[0] != PLACEHOLDER_URL:
+                        delete_from_cloudinary(old_img[0])
+                    
+                    # Subir nueva imagen
+                    uploaded_url = upload_to_cloudinary(imagen)
+                    if uploaded_url:
+                        c.execute("""
+                            UPDATE productos SET nombre = ?, descripcion = ?, imagen = ?
+                            WHERE id = ?
+                        """, (nombre, descripcion, uploaded_url, producto_id))
                     else:
-                        error_msg = "Formato de imagen no válido"
+                        c.execute("""
+                            UPDATE productos SET nombre = ?, descripcion = ?
+                            WHERE id = ?
+                        """, (nombre, descripcion, producto_id))
                 else:
                     c.execute("""
                         UPDATE productos SET nombre = ?, descripcion = ?
@@ -291,12 +270,10 @@ def editserver():
             elif action == "delete":
                 producto_id = request.form.get("producto_id")
                 
-                # Eliminar imagen si no es placeholder
+                # Eliminar imagen de Cloudinary
                 img_row = c.execute("SELECT imagen FROM productos WHERE id = ?", (producto_id,)).fetchone()
-                if img_row and img_row[0] != "placeholder.png":
-                    img_path = os.path.join(app.config["UPLOAD_FOLDER"], img_row[0])
-                    if os.path.exists(img_path):
-                        os.remove(img_path)
+                if img_row and img_row[0] != PLACEHOLDER_URL:
+                    delete_from_cloudinary(img_row[0])
                 
                 c.execute("DELETE FROM opciones WHERE producto_id = ?", (producto_id,))
                 c.execute("DELETE FROM productos WHERE id = ?", (producto_id,))
@@ -304,7 +281,6 @@ def editserver():
         
         except Exception as e:
             print(f"Error en editserver: {e}")
-            error_msg = str(e)
         finally:
             conn.close()
         
