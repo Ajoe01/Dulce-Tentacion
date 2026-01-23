@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Contáctanos</h2>
+<p>Formulario para contrataciones, pedidos especiales y consultas directas</p>
+
+<div style="max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <form id="formulario-contacto">
+        <div style="margin-bottom: 20px;">
+            <label for="nombre" style="display: block; font-weight: bold; color: #ff4d6d; margin-bottom: 5px;">Nombre completo:</label>
+            <input type="text" id="nombre" name="nombre" required placeholder="Tu nombre" style="width: 100%; padding: 12px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label for="telefono" style="display: block; font-weight: bold; color: #ff4d6d; margin-bottom: 5px;">Teléfono:</label>
+            <input type="tel" id="telefono" name="telefono" required placeholder="+57 XXX XXX XXXX" style="width: 100%; padding: 12px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label for="email" style="display: block; font-weight: bold; color: #ff4d6d; margin-bottom: 5px;">Email:</label>
+            <input type="email" id="email" name="email" required placeholder="tu@email.com" style="width: 100%; padding: 12px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label for="asunto" style="display: block; font-weight: bold; color: #ff4d6d; margin-bottom: 5px;">Asunto:</label>
+            <select id="asunto" name="asunto" required style="width: 100%; padding: 12px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
+                <option value="">Selecciona un asunto</option>
+                <option value="Pedido especial">Pedido especial</option>
+                <option value="Contratación para evento">Contratación para evento</option>
+                <option value="Consulta general">Consulta general</option>
+                <option value="Otro">Otro</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label for="mensaje" style="display: block; font-weight: bold; color: #ff4d6d; margin-bottom: 5px;">Mensaje:</label>
+            <textarea id="mensaje" name="mensaje" required placeholder="Cuéntanos sobre tu consulta, pedido especial o evento..." style="width: 100%; padding: 12px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box; font-size: 14px; height: 150px; resize: vertical;"></textarea>
+        </div>
+
+        <button type="submit" style="width: 100%; background: #ff4d6d; color: white; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer;">Enviar Mensaje</button>
+    </form>
+</div>
+
+<script>
+document.getElementById("formulario-contacto").onsubmit = function(e) {
+    e.preventDefault();
+    
+    const nombre = document.getElementById("nombre").value;
+    const telefono = document.getElementById("telefono").value;
+    const email = document.getElementById("email").value;
+    const asunto = document.getElementById("asunto").value;
+    const mensaje = document.getElementById("mensaje").value;
+    
+    // Construir mensaje para WhatsApp
+    let mensajeWhatsApp = `Hola, tengo una consulta:\n\n`;
+    mensajeWhatsApp += `*Nombre:* ${nombre}\n`;
+    mensajeWhatsApp += `*Teléfono:* ${telefono}\n`;
+    mensajeWhatsApp += `*Email:* ${email}\n`;
+    mensajeWhatsApp += `*Asunto:* ${asunto}\n`;
+    mensajeWhatsApp += `*Mensaje:* ${mensaje}`;
+    
+    // Número de WhatsApp (reemplaza con tu número)
+    const numeroWhatsApp = "573186684407";
+    const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensajeWhatsApp)}`;
+    
+    window.open(urlWhatsApp, "_blank");
+    alert("¡Gracias por tu mensaje! Te redirigimos a WhatsApp para una comunicación más rápida.");
+    
+    // Limpiar formulario
+    document.getElementById("formulario-contacto").reset();
+};
+</script>
+
+{% endblock %}

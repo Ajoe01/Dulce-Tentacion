@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Menú de Dulce Tentación 🍓</h1>
+
+    {% for categoria in categorias %}
+    <div>
+        <h2>{{ categoria.nombre }}</h2>
+        <div class="grid">
+            {% set cat_productos = productos | selectattr('categoria_id', 'equalto', categoria.id) | list %}
+            {% for producto in cat_productos %}
+            <div class="card">
+
+                <img
+                  src="{% if producto.imagen %}
+                           {% if producto.imagen.startswith('http') %}
+                               {{ producto.imagen }}
+                           {% else %}
+                               /static/images/productos/{{ producto.imagen }}
+                           {% endif %}
+                       {% else %}
+                           /static/images/productos/productos.png
+                       {% endif %}"
+                  alt="{{ producto.nombre }}"
+                  onerror="this.src='/static/images/productos/productos.png'">
+
+                <h3>{{ producto.nombre }}</h3>
+
+                {% if producto.descripcion %}
+                <p>{{ producto.descripcion }}</p>
+                {% endif %}
+
+                {% set opciones_producto = opciones | selectattr('producto_id', 'equalto', producto.id) | list %}
+                {% if opciones_producto %}
+                <p class="precio">${{ opciones_producto[0].precio | string | replace(',', '.') }}</p>
+                {% endif %}
+
+                <div class="cantidad">
+                    <button onclick="decrementar({{ producto.id }})">-</button>
+                    <input type="number" id="cantidad-{{ producto.id }}" class="cantidad-input" value="1" min="1">
+                    <button onclick="incrementar({{ producto.id }})">+</button>
+                </div>
+
+                <button class="btn-add"
+                    onclick="agregarAlCarrito(
+                        {{ producto.id }},
+                        '{{ producto.nombre }}',
+                        {{ opciones_producto[0].precio if opciones_producto else 0 }}
+                    )">
+                    Agregar al carrito
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script src="/static/cart.js"></script>
+{% endblock %}

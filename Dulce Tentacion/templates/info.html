@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Información de la tienda</h2>
+<p>Horario, ubicación y métodos de pago</p>
+
+<div style="max-width: 900px; margin: 40px auto;">
+    <!-- UBICACIÓN -->
+    <div style="background: white; padding: 25px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="color: #ff4d6d; margin-bottom: 15px;">📍 Ubicación</h3>
+        <p style="font-size: 16px; line-height: 1.6;">
+            <strong>Dulce Tentación</strong><br>
+            San Fernando Sector Calamari
+            Carrera 81C CL 14A-66<br>
+            Cartagena de Indias, Bolivar<br>
+            Teléfono: <a href="tel:+573006557487" style="color: #ff4d6d; text-decoration: none; font-weight: bold;">+57 300 655 7487</a>
+        </p>
+        <div style="margin-top: 20px; border-radius: 8px; overflow: hidden;">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3968.6576479999997!2d-75.4732131!3d10.3786766!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8ef625000d108725%3A0x750cfb5cc21c14e7!2sHeladera%CC%81a%20Dulce%20Tentacio%CC%81n!5e0!3m2!1ses!2sco!4v1674000000000" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade;"></iframe>
+        </div>
+        <p style="margin-top: 15px;">
+            <a href="https://www.google.com/maps/place/Helader%C3%ADa+Dulce+Tentaci%C3%B3n/@10.3786766,-75.4732131,15z/data=!4m6!3m5!1s0x8ef625000d108725:0x750cfb5cc21c14e7!8m2!3d10.3786702!4d-75.473167!16s%2Fg%2F11xvtr8tmj?entry=ttu&g_ep=EgoyMDI2MDEyMC4wIKXMDSoASAFQAw%3D%3D" target="_blank" style="color: #ff4d6d; text-decoration: none; font-weight: bold;">📍 Ver ubicación en Google Maps</a>
+        </p>
+    </div>
+
+    <!-- HORARIOS -->
+    <div style="background: white; padding: 25px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="color: #ff4d6d; margin-bottom: 15px;">🕐 Horarios de Atención</h3>
+        <p style="font-size: 16px; line-height: 1.8;">
+            <strong>Lunes a Viernes:</strong> 3:00 PM - 9:30 PM<br>
+            <strong>Sábados y Domingos:</strong> 3:00 PM - 10:00 PM<br>
+            <br>
+            <span style="color: #ff4d6d;">⚠️ Horarios especiales en festivos</span>
+        </p>
+    </div>
+
+    <!-- DOMICILIOS -->
+    <div style="background: white; padding: 25px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="color: #ff4d6d; margin-bottom: 15px;">🚚 Servicio de Domicilios</h3>
+        <p style="font-size: 16px; line-height: 1.8;">
+            <strong>Costo de domicilio:</strong> $4.000 en adelante<br>
+            <strong>Tiempo de entrega:</strong> 30 - 45 minutos<br>
+            <strong>Zona de cobertura:</strong> Cartagena de Indias y alrededores<br>
+            <br>
+            <em style="color: #666;">Disponible para pedidos mayores a $15.000</em>
+        </p>
+    </div>
+
+    <!-- MÉTODOS DE PAGO -->
+    <div style="background: white; padding: 25px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="color: #ff4d6d; margin-bottom: 15px;">💳 Métodos de Pago</h3>
+        <p style="font-size: 16px; line-height: 1.8;">
+            <strong>💵 Efectivo:</strong> En tienda o contra entrega<br>
+            <strong>📱 Nequi / Daviplata:</strong> Disponible mediante código QR<br>
+            <strong>🏦 Transferencia bancaria:</strong> Bajo solicitud<br>
+            <br>
+            <em style="color: #666;">Los pedidos por domicilio requieren confirmación de pago previamente.</em>
+        </p>
+    </div>
+</div>
+
+{% endblock %}
+
+

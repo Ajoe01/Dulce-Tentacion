@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="display: flex; justify-content: center; align-items: center; min-height: 60vh;">
+    <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-width: 400px; width: 100%;">
+        <h2 style="text-align: center; color: #ff4d6d; margin-bottom: 30px;">🔐 Acceso Admin</h2>
+        
+        {% if error %}
+        <div style="background: #ffebee; color: #c62828; padding: 12px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: bold;">
+            {{ error }}
+        </div>
+        {% endif %}
+        
+        <form method="post">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Contraseña:</label>
+                <input type="password" name="password" placeholder="Ingresa la contraseña" required autofocus style="width: 100%; padding: 12px; border: 2px solid #ffb3c1; border-radius: 6px; box-sizing: border-box; font-size: 16px;">
+            </div>
+            <button type="submit" style="width: 100%; background: #ff4d6d; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px;">Entrar</button>
+        </form>
+        
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+        
+        <p style="text-align: center; color: #666; margin: 0;">
+            <a href="/" style="color: #ff4d6d; text-decoration: none; font-weight: bold;">Volver al inicio</a>
+        </p>
+    </div>
+</div>
+
+{% endblock %}
