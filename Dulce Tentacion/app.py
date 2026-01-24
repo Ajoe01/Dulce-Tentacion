@@ -35,24 +35,60 @@ app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5MB máximo
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def upload_to_cloudinary(file):
-    """Sube imagen a Cloudinary y retorna la URL"""
+def upload_to_cloudinary(file, producto_nombre=None):
+    """Sube imagen a Cloudinary y retorna la URL
+    
+    Args:
+        file: Archivo de imagen a subir
+        producto_nombre: Nombre del producto para usar como public_id único
+    """
     try:
+        # Generar public_id único basado en el nombre del producto
+        if producto_nombre:
+            # Limpiar el nombre para usarlo como ID
+            # Quitar acentos, espacios, caracteres especiales
+            import unicodedata
+            producto_id = producto_nombre.lower()
+            # Remover acentos
+            producto_id = ''.join(
+                c for c in unicodedata.normalize('NFD', producto_id)
+                if unicodedata.category(c) != 'Mn'
+            )
+            # Reemplazar espacios y caracteres especiales por guiones
+            producto_id = ''.join(
+                c if c.isalnum() else '_' for c in producto_id
+            )
+            # Remover guiones múltiples
+            producto_id = '_'.join(filter(None, producto_id.split('_')))
+            public_id = f"dulce_tentacion/{producto_id}"
+        else:
+            # Si no hay nombre, generar ID único con timestamp
+            import time
+            public_id = f"dulce_tentacion/producto_{int(time.time())}"
+        
+        print(f"📤 Subiendo imagen con ID: {public_id}")
+        
         result = cloudinary.uploader.upload(
             file,
-            folder="dulce_tentacion",
+            public_id=public_id,
+            overwrite=True,  # IMPORTANTE: Sobrescribir si ya existe
+            invalidate=True,  # Invalidar cache de CDN
             transformation=[
                 {'width': 800, 'height': 800, 'crop': 'limit'},
                 {'quality': 'auto:good'}
             ]
         )
+        
+        print(f"✅ Imagen subida/actualizada: {result['secure_url']}")
         return result['secure_url']
     except Exception as e:
-        print(f"Error subiendo a Cloudinary: {e}")
+        print(f"❌ Error subiendo a Cloudinary: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def delete_from_cloudinary(image_url):
-    """Elimina imagen de Cloudinary"""
+    """Elimina imagen de Cloudinary usando la URL"""
     try:
         if image_url and "cloudinary.com" in image_url and image_url != PLACEHOLDER_URL:
             # Extraer public_id de la URL
@@ -68,10 +104,11 @@ def delete_from_cloudinary(image_url):
                 # El public_id incluye la carpeta y el nombre sin extensión
                 public_id_parts = parts[upload_idx + 2:]
                 public_id = '/'.join(public_id_parts).rsplit('.', 1)[0]
-                print(f"Intentando eliminar: {public_id}")
-                cloudinary.uploader.destroy(public_id)
+                print(f"🗑️ Eliminando imagen: {public_id}")
+                result = cloudinary.uploader.destroy(public_id)
+                print(f"✅ Resultado: {result.get('result', 'unknown')}")
     except Exception as e:
-        print(f"Error eliminando de Cloudinary: {e}")
+        print(f"❌ Error eliminando de Cloudinary: {e}")
 
 def db():
     conn = sqlite3.connect(DB)
@@ -241,13 +278,13 @@ def editserver():
                 image_url = PLACEHOLDER_URL
                 
                 if imagen and imagen.filename and allowed_file(imagen.filename):
-                    print(f"📤 Subiendo imagen: {imagen.filename}")
-                    uploaded_url = upload_to_cloudinary(imagen)
+                    print(f"📤 Subiendo imagen para: {nombre}")
+                    uploaded_url = upload_to_cloudinary(imagen, nombre)
                     if uploaded_url:
                         image_url = uploaded_url
-                        print(f"✅ Imagen subida: {image_url}")
+                        print(f"✅ Imagen guardada correctamente")
                     else:
-                        print("❌ Error al subir imagen")
+                        print("❌ Error al subir imagen, usando placeholder")
                 
                 c.execute("""
                     INSERT INTO productos (categoria_id, nombre, descripcion, imagen)
@@ -269,26 +306,17 @@ def editserver():
                 precio = request.form.get("precio", 0)
                 imagen = request.files.get("imagen")
                 
-                print(f"📝 Editando producto ID: {producto_id}")
+                print(f"📝 Editando producto ID: {producto_id} - {nombre}")
                 
                 # Si hay nueva imagen
                 if imagen and imagen.filename and allowed_file(imagen.filename):
-                    print(f"📤 Nueva imagen detectada: {imagen.filename}")
+                    print(f"📤 Nueva imagen detectada para: {nombre}")
                     
-                    # Obtener imagen anterior
-                    old_img_row = c.execute("SELECT imagen FROM productos WHERE id = ?", (producto_id,)).fetchone()
-                    old_image_url = old_img_row[0] if old_img_row else None
-                    
-                    # Subir nueva imagen
-                    uploaded_url = upload_to_cloudinary(imagen)
+                    # Subir nueva imagen (sobrescribirá la anterior si existe con el mismo nombre)
+                    uploaded_url = upload_to_cloudinary(imagen, nombre)
                     
                     if uploaded_url:
-                        print(f"✅ Nueva imagen subida: {uploaded_url}")
-                        
-                        # Eliminar imagen anterior si existe y no es placeholder
-                        if old_image_url and old_image_url != PLACEHOLDER_URL:
-                            print(f"🗑️ Eliminando imagen anterior: {old_image_url}")
-                            delete_from_cloudinary(old_image_url)
+                        print(f"✅ Nueva imagen subida/actualizada")
                         
                         # Actualizar con nueva imagen
                         c.execute("""
