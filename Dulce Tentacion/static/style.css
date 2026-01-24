@@ -491,4 +491,76 @@ table td {
 table td img {
     display: block;
     margin: 0 auto;
+
+}
+/* ============================================
+   AGREGAR AL FINAL DE style.css
+   ============================================ */
+
+/* Prevenir parpadeo de imágenes - CRÍTICO */
+img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+/* Placeholder mientras cargan las imágenes */
+.card img,
+.product-card img,
+.product-img {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+    position: relative;
+}
+
+/* Evitar saltos de layout */
+.card img,
+.product-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+    border-radius: 10px;
+}
+
+/* Transición suave solo para opacidad, NO para src */
+.card img,
+.product-card img {
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Estado cargado */
+.card img.loaded,
+.product-card img.loaded {
+    opacity: 1;
+}
+
+/* Asegurar que las imágenes no titilen en Chrome */
+.card,
+.product-card {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+/* Fix para imágenes en editserver */
+.admin-table img {
+    will-change: auto !important;
+}
+
+/* Mejorar rendimiento de scroll */
+.grid {
+    transform: translateZ(0);
+    will-change: scroll-position;
+}
+
+/* Prevenir FOUC (Flash of Unstyled Content) */
+body {
+    opacity: 0;
+    animation: fadeInBody 0.3s ease-in forwards;
+}
+
+@keyframes fadeInBody {
+    to {
+        opacity: 1;
+    }
 }
