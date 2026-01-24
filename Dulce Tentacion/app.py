@@ -110,9 +110,12 @@ def init_db():
         )
     """)
     
-    # Precarga con placeholder
+    # SOLO precarga si NO hay productos (base de datos nueva)
     c.execute("SELECT COUNT(*) FROM productos")
-    if c.fetchone()[0] == 0:
+    productos_count = c.fetchone()[0]
+    
+    if productos_count == 0:
+        print("📦 Base de datos vacía, cargando productos iniciales...")
         categorias = {
             "Fresas con Crema": [
                 ("Fresas con Crema - Pequeña", 
@@ -168,6 +171,9 @@ def init_db():
                     """, (prod_id, nombre_opcion, precio))
         
         conn.commit()
+        print("✅ Productos iniciales cargados")
+    else:
+        print(f"✅ Base de datos cargada con {productos_count} productos existentes")
     
     conn.close()
 
@@ -354,6 +360,8 @@ if __name__ == "__main__":
     print("🚀 Iniciando servidor...")
     print(f"🔐 Cloudinary configurado: {bool(os.environ.get('CLOUDINARY_CLOUD_NAME'))}")
     
-    # Usar debug=False en producción para evitar recargas automáticas
-    debug_mode = os.environ.get("FLASK_ENV") == "development"
+    # IMPORTANTE: Usar debug=False en producción para evitar recargas
+    # Si necesitas debug, cambia a True pero ten cuidado con recargas automáticas
+    debug_mode = False  # Cambiar a True solo para desarrollo
+    
     app.run(debug=debug_mode, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), threaded=True)
