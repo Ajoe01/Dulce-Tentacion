@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session
-import sqlite3, os
+import os
 from werkzeug.utils import secure_filename
 import cloudinary 
 import cloudinary.uploader 
@@ -25,7 +25,44 @@ cloudinary.config(
     api_secret=os.environ.get("CLOUDINARY_API_SECRET")
 )
 
-DB = "productos.db"
+# Detectar si estamos en Render (PostgreSQL) o local (SQLite)
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    # RENDER - Usar PostgreSQL
+    print("🐘 Usando PostgreSQL (Render)")
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    from urllib.parse import urlparse
+    
+    url = urlparse(DATABASE_URL)
+    
+    def db():
+        conn = psycopg2.connect(
+            database=url.path[1:],
+            user=url.username,
+            password=url.password,
+            host=url.hostname,
+            port=url.port
+        )
+        return conn
+    
+    def dict_cursor(conn):
+        return conn.cursor(cursor_factory=RealDictCursor)
+else:
+    # LOCAL - Usar SQLite
+    print("💾 Usando SQLite (Local)")
+    import sqlite3
+    DB = "productos.db"
+    
+    def db():
+        conn = sqlite3.connect(DB)
+        conn.row_factory = sqlite3.Row
+        return conn
+    
+    def dict_cursor(conn):
+        return conn.cursor()
+
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Dios7es7bueno7")
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 PLACEHOLDER_URL = "https://via.placeholder.com/300x300.png?text=Sin+Imagen"
@@ -46,7 +83,6 @@ def upload_to_cloudinary(file, producto_nombre=None):
         # Generar public_id único basado en el nombre del producto
         if producto_nombre:
             # Limpiar el nombre para usarlo como ID
-            # Quitar acentos, espacios, caracteres especiales
             import unicodedata
             producto_id = producto_nombre.lower()
             # Remover acentos
@@ -110,38 +146,43 @@ def delete_from_cloudinary(image_url):
     except Exception as e:
         print(f"❌ Error eliminando de Cloudinary: {e}")
 
-def db():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    return conn
-
 def init_db():
     conn = db()
-    c = conn.cursor()
+    c = dict_cursor(conn)
     
-    c.execute("""
+    # Detectar tipo de base de datos para usar sintaxis correcta
+    if DATABASE_URL:
+        # PostgreSQL
+        id_type = "SERIAL PRIMARY KEY"
+        text_type = "TEXT"
+    else:
+        # SQLite
+        id_type = "INTEGER PRIMARY KEY AUTOINCREMENT"
+        text_type = "TEXT"
+    
+    c.execute(f"""
         CREATE TABLE IF NOT EXISTS categorias (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT UNIQUE
+            id {id_type},
+            nombre {text_type} UNIQUE
         )
     """)
     
-    c.execute("""
+    c.execute(f"""
         CREATE TABLE IF NOT EXISTS productos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             categoria_id INTEGER,
-            nombre TEXT,
-            descripcion TEXT,
-            imagen TEXT,
+            nombre {text_type},
+            descripcion {text_type},
+            imagen {text_type},
             FOREIGN KEY (categoria_id) REFERENCES categorias(id)
         )
     """)
     
-    c.execute("""
+    c.execute(f"""
         CREATE TABLE IF NOT EXISTS opciones (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             producto_id INTEGER,
-            nombre_opcion TEXT,
+            nombre_opcion {text_type},
             precio INTEGER,
             FOREIGN KEY (producto_id) REFERENCES productos(id)
         )
@@ -149,7 +190,8 @@ def init_db():
     
     # SOLO precarga si NO hay productos (base de datos nueva)
     c.execute("SELECT COUNT(*) FROM productos")
-    productos_count = c.fetchone()[0]
+    result = c.fetchone()
+    productos_count = result[0] if isinstance(result, tuple) else result['count']
     
     if productos_count == 0:
         print("📦 Base de datos vacía, cargando productos iniciales...")
@@ -191,21 +233,34 @@ def init_db():
         }
         
         for categoria_nombre, productos_list in categorias.items():
-            c.execute("INSERT INTO categorias (nombre) VALUES (?)", (categoria_nombre,))
-            cat_id = c.lastrowid
+            c.execute("INSERT INTO categorias (nombre) VALUES (%s)" if DATABASE_URL else "INSERT INTO categorias (nombre) VALUES (?)", 
+                     (categoria_nombre,))
+            
+            if DATABASE_URL:
+                c.execute("SELECT lastval()")
+                cat_id = c.fetchone()[0]
+            else:
+                cat_id = c.lastrowid
             
             for nombre, descripcion, imagen, opciones in productos_list:
-                c.execute("""
-                    INSERT INTO productos (categoria_id, nombre, descripcion, imagen)
-                    VALUES (?, ?, ?, ?)
-                """, (cat_id, nombre, descripcion, imagen))
-                prod_id = c.lastrowid
+                c.execute(
+                    "INSERT INTO productos (categoria_id, nombre, descripcion, imagen) VALUES (%s, %s, %s, %s)" if DATABASE_URL else 
+                    "INSERT INTO productos (categoria_id, nombre, descripcion, imagen) VALUES (?, ?, ?, ?)",
+                    (cat_id, nombre, descripcion, imagen)
+                )
+                
+                if DATABASE_URL:
+                    c.execute("SELECT lastval()")
+                    prod_id = c.fetchone()[0]
+                else:
+                    prod_id = c.lastrowid
                 
                 for nombre_opcion, precio in opciones:
-                    c.execute("""
-                        INSERT INTO opciones (producto_id, nombre_opcion, precio)
-                        VALUES (?, ?, ?)
-                    """, (prod_id, nombre_opcion, precio))
+                    c.execute(
+                        "INSERT INTO opciones (producto_id, nombre_opcion, precio) VALUES (%s, %s, %s)" if DATABASE_URL else
+                        "INSERT INTO opciones (producto_id, nombre_opcion, precio) VALUES (?, ?, ?)",
+                        (prod_id, nombre_opcion, precio)
+                    )
         
         conn.commit()
         print("✅ Productos iniciales cargados")
@@ -223,9 +278,10 @@ def index():
 @app.route("/menu")
 def menu():
     conn = db()
-    categorias = conn.execute("SELECT * FROM categorias").fetchall()
-    productos = conn.execute("SELECT * FROM productos").fetchall()
-    opciones = conn.execute("SELECT * FROM opciones").fetchall()
+    c = dict_cursor(conn)
+    categorias = c.execute("SELECT * FROM categorias").fetchall()
+    productos = c.execute("SELECT * FROM productos").fetchall()
+    opciones = c.execute("SELECT * FROM opciones").fetchall()
     conn.close()
     return render_template("menu.html", categorias=categorias, productos=productos, opciones=opciones)
 
@@ -265,7 +321,7 @@ def editserver():
     if request.method == "POST":
         action = request.form.get("action")
         conn = db()
-        c = conn.cursor()
+        c = dict_cursor(conn)
         
         try:
             if action == "add":
@@ -286,13 +342,20 @@ def editserver():
                     else:
                         print("❌ Error al subir imagen, usando placeholder")
                 
-                c.execute("""
-                    INSERT INTO productos (categoria_id, nombre, descripcion, imagen)
-                    VALUES (?, ?, ?, ?)
-                """, (categoria_id, nombre, descripcion, image_url))
-                prod_id = c.lastrowid
+                c.execute(
+                    "INSERT INTO productos (categoria_id, nombre, descripcion, imagen) VALUES (%s, %s, %s, %s)" if DATABASE_URL else
+                    "INSERT INTO productos (categoria_id, nombre, descripcion, imagen) VALUES (?, ?, ?, ?)",
+                    (categoria_id, nombre, descripcion, image_url)
+                )
+                
+                if DATABASE_URL:
+                    c.execute("SELECT lastval()")
+                    prod_id = c.fetchone()[0]
+                else:
+                    prod_id = c.lastrowid
                 
                 c.execute(
+                    "INSERT INTO opciones (producto_id, nombre_opcion, precio) VALUES (%s, %s, %s)" if DATABASE_URL else
                     "INSERT INTO opciones (producto_id, nombre_opcion, precio) VALUES (?, ?, ?)",
                     (prod_id, "Precio", int(precio))
                 )
@@ -319,30 +382,33 @@ def editserver():
                         print(f"✅ Nueva imagen subida/actualizada")
                         
                         # Actualizar con nueva imagen
-                        c.execute("""
-                            UPDATE productos SET nombre = ?, descripcion = ?, imagen = ?
-                            WHERE id = ?
-                        """, (nombre, descripcion, uploaded_url, producto_id))
+                        c.execute(
+                            "UPDATE productos SET nombre = %s, descripcion = %s, imagen = %s WHERE id = %s" if DATABASE_URL else
+                            "UPDATE productos SET nombre = ?, descripcion = ?, imagen = ? WHERE id = ?",
+                            (nombre, descripcion, uploaded_url, producto_id)
+                        )
                     else:
                         print("❌ Error al subir nueva imagen, manteniendo datos sin cambiar imagen")
-                        # Si falla la subida, solo actualizar nombre y descripción
-                        c.execute("""
-                            UPDATE productos SET nombre = ?, descripcion = ?
-                            WHERE id = ?
-                        """, (nombre, descripcion, producto_id))
+                        c.execute(
+                            "UPDATE productos SET nombre = %s, descripcion = %s WHERE id = %s" if DATABASE_URL else
+                            "UPDATE productos SET nombre = ?, descripcion = ? WHERE id = ?",
+                            (nombre, descripcion, producto_id)
+                        )
                 else:
                     # No hay nueva imagen, solo actualizar texto
                     print("📝 Actualizando solo texto (sin cambiar imagen)")
-                    c.execute("""
-                        UPDATE productos SET nombre = ?, descripcion = ?
-                        WHERE id = ?
-                    """, (nombre, descripcion, producto_id))
+                    c.execute(
+                        "UPDATE productos SET nombre = %s, descripcion = %s WHERE id = %s" if DATABASE_URL else
+                        "UPDATE productos SET nombre = ?, descripcion = ? WHERE id = ?",
+                        (nombre, descripcion, producto_id)
+                    )
                 
                 # Actualizar precio
-                c.execute("""
-                    UPDATE opciones SET precio = ?
-                    WHERE producto_id = ?
-                """, (int(precio), producto_id))
+                c.execute(
+                    "UPDATE opciones SET precio = %s WHERE producto_id = %s" if DATABASE_URL else
+                    "UPDATE opciones SET precio = ? WHERE producto_id = ?",
+                    (int(precio), producto_id)
+                )
                 
                 conn.commit()
                 print(f"✅ Producto actualizado: {nombre}")
@@ -353,13 +419,28 @@ def editserver():
                 print(f"🗑️ Eliminando producto ID: {producto_id}")
                 
                 # Eliminar imagen de Cloudinary
-                img_row = c.execute("SELECT imagen FROM productos WHERE id = ?", (producto_id,)).fetchone()
-                if img_row and img_row[0] != PLACEHOLDER_URL:
-                    print(f"🗑️ Eliminando imagen: {img_row[0]}")
-                    delete_from_cloudinary(img_row[0])
+                c.execute(
+                    "SELECT imagen FROM productos WHERE id = %s" if DATABASE_URL else
+                    "SELECT imagen FROM productos WHERE id = ?",
+                    (producto_id,)
+                )
+                img_row = c.fetchone()
+                if img_row:
+                    img_url = img_row[0] if isinstance(img_row, tuple) else img_row['imagen']
+                    if img_url != PLACEHOLDER_URL:
+                        print(f"🗑️ Eliminando imagen: {img_url}")
+                        delete_from_cloudinary(img_url)
                 
-                c.execute("DELETE FROM opciones WHERE producto_id = ?", (producto_id,))
-                c.execute("DELETE FROM productos WHERE id = ?", (producto_id,))
+                c.execute(
+                    "DELETE FROM opciones WHERE producto_id = %s" if DATABASE_URL else
+                    "DELETE FROM opciones WHERE producto_id = ?",
+                    (producto_id,)
+                )
+                c.execute(
+                    "DELETE FROM productos WHERE id = %s" if DATABASE_URL else
+                    "DELETE FROM productos WHERE id = ?",
+                    (producto_id,)
+                )
                 conn.commit()
                 print(f"✅ Producto eliminado")
         
@@ -374,12 +455,13 @@ def editserver():
     
     # GET
     conn = db()
-    productos = conn.execute("""
+    c = dict_cursor(conn)
+    productos = c.execute("""
         SELECT p.*, o.precio 
         FROM productos p 
         LEFT JOIN opciones o ON p.id = o.producto_id
     """).fetchall()
-    categorias = conn.execute("SELECT * FROM categorias").fetchall()
+    categorias = c.execute("SELECT * FROM categorias").fetchall()
     conn.close()
     
     return render_template("editserver.html", productos=productos, categorias=categorias)
@@ -389,7 +471,6 @@ if __name__ == "__main__":
     print(f"🔐 Cloudinary configurado: {bool(os.environ.get('CLOUDINARY_CLOUD_NAME'))}")
     
     # IMPORTANTE: Usar debug=False en producción para evitar recargas
-    # Si necesitas debug, cambia a True pero ten cuidado con recargas automáticas
     debug_mode = False  # Cambiar a True solo para desarrollo
     
     app.run(debug=debug_mode, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), threaded=True)
