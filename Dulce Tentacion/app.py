@@ -191,11 +191,76 @@ def init_db():
     if productos_count == 0:
         print("📦 Base de datos vacía, cargando productos iniciales...")
         
-        # Insertar categoría General
-        if DATABASE_URL:
-            c.execute("INSERT INTO categorias (nombre) VALUES (%s)", ("General",))
-        else:
-            c.execute("INSERT INTO categorias (nombre) VALUES (?)", ("General",))
+        categorias = {
+            "Fresas con Crema": [
+                ("Fresas con Crema - Pequeña", 
+                 "Fresas, crema, mermelada de la casa, salsa de preferencia, topping de oreo.", 
+                 PLACEHOLDER_URL, [("Precio", 12000)]),
+                ("Fresas con Crema - Mediana", 
+                 "Fresas, crema, mermelada de la casa, salsa de preferencia, topping de oreo.", 
+                 PLACEHOLDER_URL, [("Precio", 15000)]),
+                ("Fresas con Crema + Toppings", 
+                 "Fresas, crema, mermelada de la casa, salsa de preferencia, toppings.", 
+                 PLACEHOLDER_URL, [("Precio", 17000)]),
+                ("Fresas con Crema + Helado", 
+                 "Fresas, crema, 1 porción de helado, queso, mermelada de la casa, salsa de preferencia, toppings.", 
+                 PLACEHOLDER_URL, [("Precio", 22000)]),
+            ],
+            "Menú Kids": [
+                ("Copas Kids", "2 porciones de helado, salsa, toppings.", PLACEHOLDER_URL, [("Precio", 8000)]),
+                ("Canasta Kids", "2 porciones de helado, salsa, toppings.", PLACEHOLDER_URL, [("Precio", 9000)]),
+            ],
+            "Helados, Copas y Ensaladas": [
+                ("Cono 1 bola", "Helado en cono de 1 porción, salsa, topping de oreo o chispitas de chocolate.", PLACEHOLDER_URL, [("Precio", 3500)]),
+                ("Cono 2 bolas", "Helado en cono de 2 porciones, salsa, topping de oreo o chispitas de chocolate.", PLACEHOLDER_URL, [("Precio", 6000)]),
+                ("Canasta 2 bolas", "Helado en canasta de 2 porciones, salsa, topping de oreo o piazza.", PLACEHOLDER_URL, [("Precio", 7000)]),
+                ("Canasta 3 bolas", "Helado en canasta de 3 porciones, salsa, topping de oreo o piazza.", PLACEHOLDER_URL, [("Precio", 9000)]),
+                ("Canasta Frutal", "Frutas, 1 porción de elado, salsa, crema de la casa, galleta.", PLACEHOLDER_URL, [("Precio", 12000)]),
+                ("Ensalada de Frutas", "Variedad de frutas, crema de la casa, 2 porciones de helado, salsa, queso, toppins.", PLACEHOLDER_URL, [("Precio", 15000)]),
+                ("Plato de Frutas con Helado", "Plato de solo frutas con 2 porciones de helado.", PLACEHOLDER_URL, [("Precio", 12000)]),
+                ("Copa Estándar", "3 porciones de helado, salsa, toppings.", PLACEHOLDER_URL, [("Precio", 9000)]),
+                ("Copa Premium", "Porción de fresas con crema, 2 porciones de helado,variedad de frutas, piazza, galletas, salsa de preferencia.", PLACEHOLDER_URL, [("Precio", 24000)]),
+            ],
+            "Obleas": [
+                ("Oblea Sencilla", "Salsa, oreo triturada o chispitas de colores.", PLACEHOLDER_URL, [("Precio", 2000)]),
+                ("Oblea con Fresas", "Fresas, crema de la casa, queso, salsas, oreo triturada.", PLACEHOLDER_URL, [("Precio", 5000)]),
+                ("Oblea Especial", "Frutas, cremade la casa, queso, salsas, oreo triturada.", PLACEHOLDER_URL, [("Precio", 8000)]),
+            ],
+        }
+        
+        for categoria_nombre, productos_list in categorias.items():
+            if DATABASE_URL:
+                c.execute("INSERT INTO categorias (nombre) VALUES (%s) RETURNING id", (categoria_nombre,))
+                cat_id = c.fetchone()['id']
+            else:
+                c.execute("INSERT INTO categorias (nombre) VALUES (?)", (categoria_nombre,))
+                cat_id = c.lastrowid
+            
+            for nombre, descripcion, imagen, opciones in productos_list:
+                if DATABASE_URL:
+                    c.execute(
+                        "INSERT INTO productos (categoria_id, nombre, descripcion, imagen) VALUES (%s, %s, %s, %s) RETURNING id",
+                        (cat_id, nombre, descripcion, imagen)
+                    )
+                    prod_id = c.fetchone()['id']
+                else:
+                    c.execute(
+                        "INSERT INTO productos (categoria_id, nombre, descripcion, imagen) VALUES (?, ?, ?, ?)",
+                        (cat_id, nombre, descripcion, imagen)
+                    )
+                    prod_id = c.lastrowid
+                
+                for nombre_opcion, precio in opciones:
+                    if DATABASE_URL:
+                        c.execute(
+                            "INSERT INTO opciones (producto_id, nombre_opcion, precio) VALUES (%s, %s, %s)",
+                            (prod_id, nombre_opcion, precio)
+                        )
+                    else:
+                        c.execute(
+                            "INSERT INTO opciones (producto_id, nombre_opcion, precio) VALUES (?, ?, ?)",
+                            (prod_id, nombre_opcion, precio)
+                        )
         
         conn.commit()
         print("✅ Productos iniciales cargados")
