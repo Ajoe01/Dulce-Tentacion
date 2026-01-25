@@ -214,9 +214,16 @@ def index():
 def menu():
     conn = db()
     c = dict_cursor(conn)
-    categorias = c.execute("SELECT * FROM categorias").fetchall()
-    productos = c.execute("SELECT * FROM productos").fetchall()
-    opciones = c.execute("SELECT * FROM opciones").fetchall()
+    
+    c.execute("SELECT * FROM categorias")
+    categorias = c.fetchall()
+    
+    c.execute("SELECT * FROM productos")
+    productos = c.fetchall()
+    
+    c.execute("SELECT * FROM opciones")
+    opciones = c.fetchall()
+    
     conn.close()
     return render_template("menu.html", categorias=categorias, productos=productos, opciones=opciones)
 
@@ -396,12 +403,17 @@ def editserver():
     # GET
     conn = db()
     c = dict_cursor(conn)
-    productos = c.execute("""
+    
+    c.execute("""
         SELECT p.*, o.precio 
         FROM productos p 
         LEFT JOIN opciones o ON p.id = o.producto_id
-    """).fetchall()
-    categorias = c.execute("SELECT * FROM categorias").fetchall()
+    """)
+    productos = c.fetchall()
+    
+    c.execute("SELECT * FROM categorias")
+    categorias = c.fetchall()
+    
     conn.close()
     
     return render_template("editserver.html", productos=productos, categorias=categorias)
